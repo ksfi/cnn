@@ -49,6 +49,27 @@ class LeNet(nn.Module):
         x = self.classifier(x)
         return x
 
+class AlexNet(nn.Module):
+    def __init__(self, n_out):
+        self.feature_extract = nn.Sequential(
+                nn.Conv2d(1, 96, 11, stride=4), nn.ReLu(),
+                nn.MaxPool(3, stride=2),
+                nn.Conv2d(96, 256, 5, pad=2), nn.ReLu(),
+                nn.MaxPool(3, stride=2),
+                nn.Conv2d(256, 384, pad=1), nn.ReLu(),
+                nn.Conv2d(384, 384, pad=1), nn.ReLu(),
+                nn.Conv2d(256, 384, pad=1), nn.ReLu(),
+                nn.MaxPool(3, stride=2))
+        self.Classifier = nn.Sequential(
+                nn.Linear(5*5*256, 4096), nn.Relu(), nn.Dropout(0.5),
+                nn.Linear(5*5*256, 100), nn.Relu(), nn.Dropout(0.5),
+                nn.Linear(5*5*256, 1000))
+        def forward(self, x):
+            x = self.feature_extract(x)
+            x = torch.flatten(x, 1)
+            x = self.classifier(x)
+            return x
+
 transforms = transforms.Compose([transforms.Resize((32, 32)),
                                  transforms.ToTensor()])
 
