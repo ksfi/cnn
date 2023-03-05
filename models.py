@@ -24,6 +24,7 @@ N_CLASSES = 10
 
 # [(W−K+2P)/S]+1
 
+# http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf
 class LeNet(nn.Module):
     def __init__(self, n_out):
         super(LeNet, self).__init__()
@@ -51,8 +52,9 @@ class LeNet(nn.Module):
 
 class AlexNet(nn.Module):
     def __init__(self, n_out):
+        super(AlexNet, self).__init__()
         self.feature_extract = nn.Sequential(
-                nn.Conv2d(1, 96, 11, stride=4), nn.ReLu(),
+                nn.Conv2d(3, 96, 11, stride=4), nn.ReLu(),
                 nn.MaxPool(3, stride=2),
                 nn.Conv2d(96, 256, 5, pad=2), nn.ReLu(),
                 nn.MaxPool(3, stride=2),
@@ -62,13 +64,23 @@ class AlexNet(nn.Module):
                 nn.MaxPool(3, stride=2))
         self.Classifier = nn.Sequential(
                 nn.Linear(5*5*256, 4096), nn.Relu(), nn.Dropout(0.5),
-                nn.Linear(5*5*256, 100), nn.Relu(), nn.Dropout(0.5),
+                nn.Linear(4096, 1000), nn.Relu(), nn.Dropout(0.5),
                 nn.Linear(5*5*256, 1000))
     def forward(self, x):
         x = self.feature_extract(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
         return x
+
+# https://arxiv.org/pdf/1409.1556.pdf
+class ConvNetA(nn.Module):
+    def __init__(self, n_out):
+        super(VGG16, self).__init__()
+        self.feature_extract = nn.Sequential(
+                nn.Conv2d(3, 64), nn.ReLu(),
+                nn.Conv2d(64, 128), nn.ReLu()
+                )
+
 
 transforms = transforms.Compose([transforms.Resize((32, 32)),
                                  transforms.ToTensor()])
