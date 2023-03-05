@@ -64,11 +64,11 @@ class AlexNet(nn.Module):
                 nn.Linear(5*5*256, 4096), nn.Relu(), nn.Dropout(0.5),
                 nn.Linear(5*5*256, 100), nn.Relu(), nn.Dropout(0.5),
                 nn.Linear(5*5*256, 1000))
-        def forward(self, x):
-            x = self.feature_extract(x)
-            x = torch.flatten(x, 1)
-            x = self.classifier(x)
-            return x
+    def forward(self, x):
+        x = self.feature_extract(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+        return x
 
 transforms = transforms.Compose([transforms.Resize((32, 32)),
                                  transforms.ToTensor()])
