@@ -75,7 +75,7 @@ class AlexNet(nn.Module):
 # https://arxiv.org/pdf/1409.1556.pdf
 class ConvNetA(nn.Module):
     def __init__(self, n_out):
-        super(VGG16, self).__init__()
+        super(ConvNetA, self).__init__()
         self.feature_extract = nn.Sequential(
                 nn.Conv2d(3, 64), nn.ReLu(),
                 nn.Conv2d(64, 128), nn.ReLu()
