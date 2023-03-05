@@ -7,10 +7,12 @@ import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from tqdm import tqdm
+# from pytorch_lightning.callbacks import TQDMProgressBar
 
 OUTPUT_SIZE = 10
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-EPOCH = 2
+EPOCH = n_epochs = 2
 
 RANDOM_SEED = 42
 LEARNING_RATE = 0.001
@@ -45,8 +47,7 @@ class LeNet(nn.Module):
         x = self.feature_extract(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
-        probs = F.softmax(x, dim=1)
-        return x, probs
+        return x
 
 transforms = transforms.Compose([transforms.Resize((32, 32)),
                                  transforms.ToTensor()])
@@ -71,27 +72,46 @@ valid_loader = DataLoader(dataset=valid_dataset,
 
 if __name__ == "__main__":
     m = LeNet(10).to(DEVICE)
-#     optimizer = optim.Adam(m.parameters(), lr=LEARNING_RATE)
-#     criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(m.parameters(), lr=LEARNING_RATE)
+    criterion = nn.CrossEntropyLoss()
 
-n_epochs = 200
-loss_fn = nn.BCELoss()
-optimizer = optim.SGD(m.parameters(), lr=0.1)
-m.train()
-for epoch in range(n_epochs):
-    for X_batch, y_batch in train_loader:
-        y_pred = torch.stack(m(X_batch))
-        print(type(y_pred), type(y_batch))
-        loss = loss_fn(y_pred, y_batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(m.parameters(), lr=0.1)
+    m.train()
+    for epoch in range(n_epochs):
+        for X_batch, y_batch in tqdm(train_loader):
+            X_batch, y_batch = X_batch.to(DEVICE), y_batch.to(DEVICE)
+            y_pred = m(X_batch)
+            loss = loss_fn(y_pred, y_batch)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-m.eval()
-y_pred = m(X_test)
-acc = (y_pred.round() == y_test).float().mean()
-acc = float(acc)
-print("Model accuracy: %.2f%%" % (acc*100))
+    m.eval()
+    eval_losses=[]
+    eval_accu=[]
+    running_loss=0
+    correct=0
+    total=0
+    with torch.no_grad():
+        for X_batch, y_batch in tqdm(valid_loader):
+            X_batch, y_batch = X_batch.to(DEVICE), y_batch.to(DEVICE)
+            y_pred = m(X_batch)
+            loss = loss_fn(y_pred, y_batch)
+            running_loss += loss.item()
+            _, predicted = y_pred.max(1)
+            total += y_batch.size(0)
+            correct += y_pred.eq(y_batch.resize_(y_pred.size())).sum().item()
+
+    test_loss=running_loss/len(valid_loader)
+    accu=100.*correct/total
+    print(f"correct {correct}, total {total}")
+
+    eval_losses.append(test_loss)
+    eval_accu.append(accu)
+
+    print('Test Loss: %.3f | Accuracy: %.3f'%(test_loss,accu)) 
+
 
 
 
