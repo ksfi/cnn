@@ -94,7 +94,7 @@ class ConvNetA(nn.Module):
                 nn.MaxPool2d(2, stride=2)
                 )
         self.Classifier = nn.Sequential(
-                nn.Linear(self.feature_extract[20].shape[1]*self.feature_extract[20].shape[2]*self.feature_extract[20].shape[3], 4096), nn.Relu(),
+                nn.Linear(8*8*512, 4096), nn.Relu(),
                 nn.Linear(4096, 4096), nn.Relu(),
                 nn.Linear(4096, 1000), nn.Relu()
                 )
@@ -148,11 +148,20 @@ class Size(nn.Module):
         x = self.feature_extract(x)
         return x
 
-def H_out(H_in, pad, ker, stride):
+def H(H_in, pad, ker, stride): # (.., 1, 3, 1) for conv (.., 1, 2, 2) for pool
     return math.floor(((H_in+2*pad-(ker-1)-1)/stride)+1)
 
-def W_out(W_in, pad, ker, stride):
+def W(W_in, pad, ker, stride):
     return math.floor(((W_in+2*pad-(ker-1)-1)/stride)+1)
+
+def outH(lay, size):
+    out=size
+    for l in lay:
+        if l == 1:
+            out = H(out, 1, 3, 1)
+        if l == 0:
+            out = H(out, 1, 2, 2)
+    return out
 
 
 if __name__ == "__main__":
@@ -196,6 +205,4 @@ if __name__ == "__main__":
 #     eval_accu.append(accu)
 # 
 #     print('Test Loss: %.3f | Accuracy: %.3f'%(test_loss,accu)) 
-
-    s = Size(1000)
-    summary(s, (3, 224, 224))
+    print(outH([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0], 224))
