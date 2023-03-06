@@ -13,7 +13,7 @@ from torchsummary import summary
 
 OUTPUT_SIZE = 10
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-EPOCH = n_epochs = 2
+EPOCH = n_epochs = 1
 
 RANDOM_SEED = 42
 LEARNING_RATE = 0.001
@@ -23,52 +23,10 @@ N_EPOCHS = 15
 IMG_SIZE = 28
 N_CLASSES = 10
 
-transforms1 = transforms.Compose([transforms.Resize((32, 32)),
-                                 transforms.ToTensor()])
-
-train_dataset1 = datasets.MNIST(root='mnist_data', 
-                               train=True, 
-                               transform=transforms,
-                               download=True)
-
-valid_dataset1 = datasets.MNIST(root='mnist_data', 
-                               train=False, 
-                               transform=transforms)
-
-train_loader1 = DataLoader(dataset=train_dataset1, 
-                          batch_size=BATCH_SIZE, 
-                          shuffle=True)
-
-valid_loader1 = DataLoader(datasetvalid_dataset1,
-                          batch_size=BATCH_SIZE, 
-                          shuffle=False)
-
-
-
-
-transforms2 = transforms.Compose([transforms.Resize((224, 224)),
-                                 transforms.ToTensor()])
-
-train_dataset2 = datasets.CIFAR10(root='cifar_data', 
-                               train=True, 
-                               transform=transforms2,
-                               download=True)
-
-valid_dataset2 = datasets.CIFAR10(root='cifar_data', 
-                               train=False, 
-                               transform=transforms2)
-
-train_loader2 = DataLoader(dataset=train_dataset2,
-                          batch_size=BATCH_SIZE, 
-                          shuffle=True)
-
-valid_loader1 = DataLoader(dataset=valid_dataset2, 
-                          batch_size=BATCH_SIZE, 
-                          shuffle=False)
-
 def load(m):
+    global transforms
     if type(m).__name__ == "LeNet":
-        transforms1 = transforms.Compose([transforms.Resize((32, 32)),
+        transforms = transforms.Compose([transforms.Resize((32, 32)),
                                          transforms.ToTensor()])
         train_dataset = datasets.MNIST(root='mnist_data', 
                                        train=True, 
@@ -80,7 +38,7 @@ def load(m):
         train_loader = DataLoader(dataset=train_dataset, 
                                   batch_size=BATCH_SIZE, 
                                   shuffle=True)
-        valid_loader = DataLoader(datasetvalid_dataset,
+        valid_loader = DataLoader(dataset=valid_dataset,
                                   batch_size=BATCH_SIZE, 
                                   shuffle=False)
 
@@ -103,8 +61,7 @@ def load(m):
 
     return train_dataset, valid_dataset, train_loader, valid_loader
 
-def train(m train_dataset, valid_dataset, train_loader, valid_loader):
-    loss_fn = nn.CrossEntropyLoss()
+def train(m, train_dataset, valid_dataset, train_loader, valid_loader, loss_fn):
     optimizer = optim.SGD(m.parameters(), lr=0.1)
     m.train()
     for epoch in range(n_epochs):
@@ -116,7 +73,7 @@ def train(m train_dataset, valid_dataset, train_loader, valid_loader):
             loss.backward()
             optimizer.step()
 
-def evaluation(m, train_dataset, valid_dataset, train_loader, valid_loader):
+def evaluation(m, train_dataset, valid_dataset, train_loader, valid_loader, loss_fn):
     m.eval()
     eval_losses=[]
     eval_accu=[]
@@ -132,22 +89,35 @@ def evaluation(m, train_dataset, valid_dataset, train_loader, valid_loader):
             _, predicted = y_pred.max(1)
             total += y_batch.size(0)
             correct += y_pred.eq(y_batch.resize_(y_pred.size())).sum().item()
+    return total, correct, running_loss
 
 def run(m):
+    loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(m.parameters(), lr=LEARNING_RATE)
     criterion = nn.CrossEntropyLoss()
     train_dataset, valid_dataset, train_loader, valid_loader = load(m)
-    train(m, train_dataset, valid_dataset, train_loader, valid_loader)
-    evaluation(m, train_dataset, valid_dataset, train_loader, valid_loader)
+    train(m, train_dataset, valid_dataset, train_loader, valid_loader, loss_fn)
+    total, correct, running_loss = evaluation(m, train_dataset, valid_dataset, train_loader, valid_loader, loss_fn)
+    return total, correct, running_loss, len(valid_loader)
 
-m = models.LeNet(10).to(DEVICE)
+if __name__ == "__main__":
+    #     m = models.LeNet(10).to(DEVICE)
+    m = models.AlexNet(10).to(DEVICE)
+    total, correct, running_loss, valid_loader_len = run(m)
 
-test_loss=running_loss/len(valid_loader)
-accu=100.*correct/total
-print(f"correct {correct}, total {total}")
+    test_loss=running_loss/valid_loader_len
+    accu=100.*correct/total
+    print(f"correct {correct}, total {total}")
 
-eval_losses.append(test_loss)
-eval_accu.append(accu)
+    eval_losses=[]
+    eval_accu=[]
+    eval_losses.append(test_loss)
+    eval_accu.append(accu)
 
-print('Test Loss: %.3f | Accuracy: %.3f'%(test_loss,accu)) 
-print(utils.outH([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0], 224))
+    print('Test Loss: %.3f | Accuracy: %.3f'%(test_loss,accu)) 
+    print(utils.outH([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0], 224))
+
+
+
+
+
