@@ -1,3 +1,1 @@
-# Convolutional Neural Network
-
-Some classifiers
+# some networks
